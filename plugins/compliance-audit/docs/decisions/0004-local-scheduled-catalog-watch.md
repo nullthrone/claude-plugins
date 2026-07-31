@@ -147,6 +147,17 @@ no gate when it is reported as if it were meaningful.
   PR every week for roughly six weeks starting now. Accepted as the cost of
   keeping the original design's actual proposer/disposer value instead of
   degrading to Option 2.
+- Bad (discovered during the supervised re-baseline, not caused by this
+  decision): the three `publication`-type sources hash the whole fetched page
+  unnormalised (`extract_whole`), and two live fetches of the same page
+  minutes apart produced two different hashes both times. Expect a
+  `publication` triage issue most weeks per source even without real content
+  change; the ledger cannot dedupe it, since its fingerprint includes
+  `hash_after`. Not a safety issue — `publication` only ever produces an
+  issue, never an auto-PR — but real, ongoing noise. Documented in
+  `catalog/sources.yaml` next to the affected sources; deferred rather than
+  fixed here, because a real fix needs a better extractor (listing entries,
+  not the whole page) that should be validated on its own.
 
 ## Risk Assessment
 

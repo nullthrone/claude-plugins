@@ -10,6 +10,18 @@
 #   publication — feed of new documents. No diff; triage only.
 #   deadline   — no external source at all. Pure date arithmetic over the
 #                `deadline` fields already present in mappings.yaml.
+#
+# KNOWN LIMITATION (publication sources, extractor: *_listing -> extract_whole):
+# the whole fetched page is hashed unnormalised. Two live fetches of the same
+# bgbl/oj-l-series page minutes apart, no schedule in between, produced two
+# different doc_sha256 each time — the page embeds something that changes on
+# every request (nonce, timestamp, session token; not identified). Expect a
+# `publication` triage event most weeks even with no real content change.
+# Not a safety issue (publication -> issue only, never an auto-PR, never
+# merged) but real noise, and the watch-handled ledger cannot dedupe it since
+# its fingerprint includes hash_after, which changes every fetch. A real fix
+# needs a better extractor (the listing entries themselves, not the whole
+# page) — deferred; see docs/decisions/0004.
 
 version: "0.1.1"
 

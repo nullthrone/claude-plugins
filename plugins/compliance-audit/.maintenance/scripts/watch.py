@@ -189,6 +189,7 @@ def fetch(src: dict, fixtures: Path | None, timeout: int, ua: str) -> tuple[str 
     try:
         with urllib.request.urlopen(req, timeout=timeout, context=ctx) as r:
             raw = r.read()
+            status = r.status
     except urllib.error.HTTPError as e:
         if e.code == 404 and src.get("expect_edition_bump"):
             # The URL carries the edition year. A 404 IS the signal.
@@ -196,6 +197,17 @@ def fetch(src: dict, fixtures: Path | None, timeout: int, ua: str) -> tuple[str 
         return None, f"HTTP {e.code}"
     except Exception as e:  # noqa: BLE001 - network layer, any failure is the same to us
         return None, f"{type(e).__name__}: {e}"
+
+    # A 2xx status is not proof of content. Observed in practice against
+    # eur-lex: HTTP 202 with a zero-byte body, apparently a soft rate-limit /
+    # async-queue response -- urlopen raises nothing for it, since 202 is a
+    # success code. Left unguarded, that empty body flows straight into the
+    # extractor as a real fetch, and a 99-article document is reported as 99
+    # segments removed plus one empty one added. Treat an empty body as an
+    # error regardless of status code; zero bytes is never valid content for
+    # any source this watcher reads.
+    if not raw:
+        return None, f"empty response body (HTTP {status})"
 
     if src["url"].lower().endswith(".pdf"):
         try:

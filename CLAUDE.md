@@ -4,7 +4,7 @@ This repository is a **Claude Code plugin marketplace** (manifest `name`: `nullt
 
 ## Structure
 
-- `.claude-plugin/marketplace.json` — the marketplace manifest. `plugins[]` lists every published plugin (name, source path/URL, description, version). `metadata.pluginRoot` is `./plugins`, so plugin sources are written as plugin directory names relative to that root.
+- `.claude-plugin/marketplace.json` — the marketplace manifest. `plugins[]` lists every published plugin (name, source path/URL, description, version). Each plugin's `source` is the full repo-relative path (`./plugins/<name>`) — do not add a `metadata.pluginRoot` shortcut: it passes `claude plugin validate .` but fails at install time (`Source path does not exist`), see commit `467cf20`.
 - `plugins/<plugin-name>/` — one directory per plugin, each with its own `.claude-plugin/plugin.json` manifest and component directories (`skills/`, `commands/`, `agents/`, `hooks/`, `.mcp.json`, etc. — auto-discovered by convention, no need to list them in plugin.json unless using non-default paths).
 
 ## Conventions

@@ -19,6 +19,7 @@ Then install any plugin listed below:
 ## Available plugins
 
 - **[compliance-audit](plugins/compliance-audit)**: Audits code, IaC and runtime configuration against German and EU regulatory frameworks (BSI IT-Grundschutz, Cyber Resilience Act, GDPR).
+- **[prisma-airs](plugins/prisma-airs)**: Guided setup and runtime protection for Palo Alto Networks Prisma AIRS (AI Runtime Security) -- onboarding, opt-in hooks, an MCP tool-poisoning audit, and a CI gate for prompt-shaped repository artifacts.
 
 ## Adding a new plugin
 

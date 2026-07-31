@@ -43,9 +43,17 @@ or force-push. This is also enforced by `deny` rules in the root
    intermediate files (`record.json`, `candidate-state.json`) go there —
    never into the repo working tree, and never into `.compliance/` (that is
    the audited-project output path, unrelated to this).
-3. Locate the venv at `%USERPROFILE%/.claude-tools/catalog-watch/venv`
-   (`~/.claude-tools/catalog-watch/venv` on macOS/Linux). If
-   `Scripts/python.exe` (or `bin/python`) does not exist, bootstrap it:
+3. The venv lives at `C:/Users/Thomas/.claude-tools/catalog-watch/venv`
+   (`~/.claude-tools/catalog-watch/venv` on macOS/Linux). **Always invoke it
+   by this literal, fully-resolved absolute path** — never through
+   `$USERPROFILE`/`%USERPROFILE%`/`~` or any other variable or shorthand.
+   Permission matching in `.claude/settings.json` is against the exact
+   command text as executed, not its resolved meaning: an allow rule for the
+   literal path does not match a command that spells the same path via an
+   unexpanded variable, and the run will stall on an approval prompt it
+   cannot answer headlessly. This is not a hypothetical — an actual headless
+   `--dry-run` hit exactly this.
+   If `Scripts/python.exe` (or `bin/python`) does not exist, bootstrap it:
    ```
    python -m venv <venv-dir>
    <venv-dir>/Scripts/pip install -r plugins/compliance-audit/.maintenance/requirements.txt

@@ -37,8 +37,7 @@
       "Bash(gh issue list:*)",
       "Bash(gh repo view:*)",
       "Bash(python:*)",
-      "Bash(*/venv/Scripts/python.exe:*)",
-      "Bash(*/venv/bin/python:*)",
+      "Bash(C:/Users/Thomas/.claude-tools/catalog-watch/venv/Scripts/python.exe:*)",
       "Bash(claude plugin validate:*)"
     ]
   }

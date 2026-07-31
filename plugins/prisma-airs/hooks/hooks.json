@@ -1,0 +1,55 @@
+{
+  "description": "Prisma AIRS runtime scanning: prompt, tool input/output, and (opt-in) final response text, checked against the Prisma AIRS AI Runtime Scan API. Inert (exit 0, no network call) until .prisma-airs.json and an API key are both present -- run /prisma-airs-setup first.",
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/hook_prompt.py"],
+            "timeout": 8
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/hook_pretool.py"],
+            "timeout": 8
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/hook_posttool.py"],
+            "timeout": 8
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3",
+            "args": ["${CLAUDE_PLUGIN_ROOT}/scripts/hook_stop.py"],
+            "timeout": 8
+          }
+        ]
+      }
+    ]
+  }
+}

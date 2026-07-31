@@ -30,6 +30,27 @@
         "audit",
         "sbom"
       ]
+    },
+    {
+      "name": "prisma-airs",
+      "source": "./plugins/prisma-airs",
+      "description": "Guided setup and runtime protection for Palo Alto Networks Prisma AIRS (AI Runtime Security) in Claude Code: onboarding to a verified scan, opt-in hooks that check prompts/tool calls/responses, an MCP tool-poisoning audit, and a CI gate for prompt-shaped repository artifacts. Inert until configured.",
+      "version": "0.1.0",
+      "author": {
+        "name": "Thomas Sprock",
+        "url": "https://github.com/nullthrone"
+      },
+      "license": "MIT",
+      "keywords": [
+        "prisma-airs",
+        "ai-runtime-security",
+        "palo-alto-networks",
+        "security",
+        "prompt-injection",
+        "dlp",
+        "mcp-security",
+        "guardrails"
+      ]
     }
   ]
 }

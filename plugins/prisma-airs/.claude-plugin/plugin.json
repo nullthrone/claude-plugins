@@ -1,0 +1,16 @@
+{
+  "name": "prisma-airs",
+  "version": "0.1.0",
+  "description": "Guided setup and runtime protection for Palo Alto Networks Prisma AIRS (AI Runtime Security) in Claude Code: an onboarding flow to the first verified scan, opt-in hooks that check prompts/tool calls/responses against the Scan API, an MCP tool-poisoning audit, and a CI gate for prompt-shaped repository artifacts. Inert until configured -- see /prisma-airs-setup.",
+  "author": {
+    "name": "Thomas",
+    "url": "https://github.com/t11z"
+  },
+  "homepage": "https://github.com/nullthrone/claude-plugins/tree/main/plugins/prisma-airs",
+  "repository": "https://github.com/nullthrone/claude-plugins",
+  "license": "MIT",
+  "keywords": [
+    "prisma-airs", "ai-runtime-security", "palo-alto-networks", "security",
+    "prompt-injection", "dlp", "mcp-security", "guardrails"
+  ]
+}

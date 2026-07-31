@@ -1,0 +1,17 @@
+This plugin's own code is licensed under MIT -- see LICENSE.
+
+Some design ideas (the runtime-hook checkpoint model, environment variable
+naming for the API key/profile, and the list of gaps addressed in
+docs/decisions/ and reference/upstream.md) were informed by:
+
+    Claude Code Security Hooks
+    https://github.com/PaloAltoNetworks/prisma-airs-integrations
+    (Anthropic/claude-code-hooks/)
+    Copyright (c) 2025 Claude Code Security Hooks
+    Licensed under the MIT License.
+
+That repository's own README states: "The contents of this repository are
+community examples and reference implementations, supported as best effort
+by Palo Alto Networks." No code from it was copied verbatim into this
+plugin; see reference/upstream.md for exactly what was adopted, what
+changed, and why.

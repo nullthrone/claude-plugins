@@ -1,0 +1,93 @@
+name: catalog-watch-heartbeat
+
+# Zero-secret watchdog for the compliance-audit plugin's weekly catalog-watch,
+# which runs as a locally-scheduled Claude Code command (see
+# plugins/compliance-audit/docs/decisions/0004-local-scheduled-catalog-watch.md),
+# not as a GitHub Actions workflow. A desktop scheduler cannot report its own
+# absence -- this is the layer that survives the machine being off, at the
+# cost of GitHub's own ~60-day scheduled-workflow auto-disable on repo
+# inactivity, which only a real commit (not this workflow's own runs) resets.
+#
+# Uses only the automatic GITHUB_TOKEN. No GitHub App, no repo secrets, no
+# Claude action -- a deliberately different risk profile from the CI this
+# plugin had before consolidation. See ADR-0004.
+
+on:
+  schedule:
+    - cron: "0 8 * * 2"   # Tuesday 08:00 UTC -- a day after catalog-watch's Monday run
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            plugins/compliance-audit/.maintenance/state/last-run.json
+          sparse-checkout-cone-mode: false
+
+      - name: Check heartbeat age
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'plugins/compliance-audit/.maintenance/state/last-run.json';
+
+            const STALE_DAYS = 10;
+            const TITLE = 'catalog-watch: heartbeat stale or missing';
+
+            let reason = null;
+            if (!fs.existsSync(path)) {
+              reason = `\`${path}\` does not exist. catalog-watch has never run, or its first commit never landed.`;
+            } else {
+              const record = JSON.parse(fs.readFileSync(path, 'utf8'));
+              const finishedAt = record.finished_at ? new Date(record.finished_at) : null;
+              if (!finishedAt || Number.isNaN(finishedAt.getTime())) {
+                reason = `\`${path}\` has no valid \`finished_at\`. Content: \`${JSON.stringify(record)}\``;
+              } else {
+                const ageDays = (Date.now() - finishedAt.getTime()) / 86400000;
+                if (ageDays > STALE_DAYS) {
+                  reason = `Last recorded run finished ${finishedAt.toISOString()} (${ageDays.toFixed(1)} days ago, trigger: ${record.trigger ?? 'unknown'}, status: ${record.status ?? 'unknown'}). Expected weekly.`;
+                } else {
+                  console.log(`ok: heartbeat is ${ageDays.toFixed(1)} days old`);
+                }
+              }
+            }
+
+            if (!reason) return;
+
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'catalog,watch-failure',
+            });
+            if (existing.data.some(i => i.title === TITLE)) {
+              console.log('stale-heartbeat issue already open, not filing a duplicate');
+              return;
+            }
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: TITLE,
+              body: [
+                reason,
+                '',
+                'The scheduled desktop run (Windows Task Scheduler -> `claude -p "/catalog-watch"`)',
+                'may not have fired -- machine off, Claude Code auth expired, or an error before',
+                'Phase 6 (heartbeat) of `.claude/commands/catalog-watch.md` could write and commit',
+                '`last-run.json`. Check the scheduler history on the machine it runs on.',
+                '',
+                'Note: this watchdog itself is subject to the same GitHub scheduled-workflow',
+                '~60-day inactivity auto-disable, and only a real commit resets that clock -- if',
+                'this issue and the underlying problem both go unaddressed for that long, this',
+                'workflow may stop firing too. See ADR-0004.',
+              ].join('\n'),
+              labels: ['catalog', 'watch-failure'],
+            });

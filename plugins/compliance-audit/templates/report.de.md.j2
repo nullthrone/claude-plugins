@@ -1,0 +1,210 @@
+{#-
+  Deterministisches Rendering. Kein LLM in diesem Pfad.
+  Alle Prosa-Anteile stammen aus Feldern des JSON (executive_summary, rationale,
+  remediation.summary). Der Renderer formuliert nichts neu.
+-#}
+{% set VERDICT_LABEL = {
+  "pass": "bestanden",
+  "fail": "nicht erfuellt",
+  "partial": "teilweise erfuellt",
+  "not_applicable": "nicht anwendbar",
+  "out_of_technical_scope": "ausserhalb des technischen Pruefumfangs",
+  "insufficient_evidence": "unzureichende Evidenz"
+} %}
+{% set VERDICT_MARK = {
+  "pass": "PASS",
+  "fail": "FAIL",
+  "partial": "PART",
+  "not_applicable": "N/A",
+  "out_of_technical_scope": "SCOPE",
+  "insufficient_evidence": "EVID"
+} %}
+{% set ENF_LABEL = {
+  "enforced": "durchgesetzt",
+  "advisory": "nur beratend",
+  "none": "keine",
+  "n/a": "—"
+} %}
+{% set ORIGIN_LABEL = {
+  "collected": "selbst erhoben",
+  "inherited": "ererbt (Provider-Attestierung)",
+  "customer-responsibility": "Kundenverantwortung",
+  "organizational": "organisatorisch"
+} %}
+# Compliance-Audit-Report
+
+**Assurance-Level:** `{{ run.assurance_level }}`
+
+Dieser Bericht trifft **keine Konformitaetsaussage**. Er weist ausschliesslich aus, welche Anforderungen sich aus Code, Infrastrukturdefinition und Runtime-Konfiguration technisch belegen lassen. Anforderungen der Klasse C erfordern organisatorische Nachweise und sind in Abschnitt 6 gesondert ausgewiesen.
+
+---
+
+## 1. Pruefumfang
+
+| Feld | Wert |
+|---|---|
+| Lauf-ID | `{{ run.run_id }}` |
+| Zeitraum | {{ run.started_at }} – {{ run.finished_at }} |
+| Repository | `{{ run.target.repo }}` |
+| Commit | `{{ run.target.commit_sha[:12] }}`{% if run.target.get('branch') %} ({{ run.target.get('branch') }}){% endif %} |
+{% if run.target.get('iac_paths') %}
+| IaC-Pfade | {{ run.target.iac_paths | join(", ") }} |
+{% endif %}
+{% for cs in run.target.get('cloud_scope', []) %}
+| Cloud-Scope | {{ cs.provider | upper }} `{{ cs.scope_uri }}` (Credentials: {{ cs.get('credential_mode', 'unknown') }}) |
+{% endfor %}
+| Katalogstand | {{ run.tooling.catalog_version }} (Auditor {{ run.tooling.auditor_version }}) |
+| Evidenz-Bundle | `{{ run.evidence_bundle.bundle_id }}`, SHA-256 `{{ run.evidence_bundle.sha256[:16] }}…` |
+
+**Rahmenwerke:**
+
+{% for f in run.frameworks %}
+- {{ f.id }} ({{ f.version }}{% if f.get('profile') %}, Profil {{ f.get('profile') }}{% endif %})
+{% endfor %}
+
+---
+
+## 2. Deckungsgrad
+
+{% for c in run.coverage %}
+### {{ c.framework_id }}{{ " — Profil " ~ c.profile if c.get("profile") else "" }}
+
+| Kennzahl | Anzahl |
+|---|---:|
+| Katalogeintraege | {{ c.controls_in_catalog }} |
+| **davon technisch pruefbar** | **{{ c.technically_assessable }}** |
+| geprueft | {{ c.assessed }} |
+| bestanden | {{ c.passed }} |
+| nicht erfuellt | {{ c.failed }} |
+| teilweise erfuellt | {{ c.partial }} |
+| nicht anwendbar | {{ c.not_applicable }} |
+| **ausserhalb des technischen Pruefumfangs** | **{{ c.out_of_technical_scope }}** |
+| unzureichende Evidenz | {{ c.insufficient_evidence }} |
+
+Bezugsgroesse jeder Quote ist `technically_assessable` ({{ c.technically_assessable }}), nicht `controls_in_catalog` ({{ c.controls_in_catalog }}). Eine Aussage der Form „{{ c.passed }} von {{ c.controls_in_catalog }} erfuellt" waere irrefuehrend.
+
+{% endfor %}
+---
+
+## 3. Zusammenfassung
+
+{{ run.executive_summary }}
+
+---
+
+## 4. Verstoesse
+
+{% set open_controls = run.controls | selectattr("verdict", "in", ["fail", "partial"]) | list %}
+{% if not open_controls %}
+Keine offenen Verstoesse in den technisch pruefbaren Anforderungen.
+
+{% else %}
+{% for ctl in open_controls %}
+### [{{ VERDICT_MARK[ctl.verdict] }}] {{ ctl.framework_id }} · {{ ctl.control_id }} — {{ ctl.title }}
+
+- **Urteil:** {{ VERDICT_LABEL[ctl.verdict] }}
+- **Durchsetzung:** {{ ENF_LABEL[ctl.enforcement] }}
+- **Evidenz:** Klasse {{ ctl.evidence_class }}, {{ ORIGIN_LABEL[ctl.evidence_origin] }}{{ ", Konfidenz " ~ ctl.confidence if ctl.get("confidence") else "" }}
+- **Fundstelle:** {{ ctl.requirement_ref.citation }}
+
+{{ ctl.rationale }}
+
+{% if ctl.get('inherited_evidence') %}
+{% set ie = ctl.inherited_evidence %}
+> **Ererbte Evidenz:** {{ ie.attestation }} ({{ ie.provider }}){{ ", gueltig bis " ~ ie.valid_until if ie.get("valid_until") else "" }}
+>
+> Produkt-Scope geprueft: {{ "ja" if ie.scope_verified else "**nein**" }} · CUEC-Status: {{ ie.get('cuec_status', 'unverified') }}
+{% if ie.get('services_out_of_scope') %}
+>
+> **Ausserhalb des Attestierungs-Scopes:** {{ ie.services_out_of_scope | join(", ") }}
+{% endif %}
+
+{% endif %}
+{% if ctl.finding_refs %}
+| Finding | Primitive | Schwere | Ist | Soll |
+|---|---|---|---|---|
+{% for fid in ctl.finding_refs %}
+{% set f = findings_by_id[fid] %}
+| `{{ f.finding_id }}` | `{{ f.primitive_id }}` | {{ f.severity }} | {{ f.observed }} | {{ f.expected }} |
+{% endfor %}
+
+{% endif %}
+{% if ctl.get('remediation') %}
+**Behebung:** {{ ctl.remediation.summary }}
+
+{% if ctl.remediation.get('refs') %}
+{% for r in ctl.remediation.refs %}
+- `{{ r }}`
+{% endfor %}
+
+{% endif %}
+{% endif %}
+{% endfor %}
+{% endif %}
+---
+
+## 5. Kontrolldetails
+
+| Rahmenwerk | Control | Urteil | Klasse | Herkunft | Durchsetzung | Findings |
+|---|---|---|---|---|---|---|
+{% for ctl in run.controls %}
+| {{ ctl.framework_id }} | `{{ ctl.control_id }}` | {{ VERDICT_LABEL[ctl.verdict] }} | {{ ctl.evidence_class }} | {{ ORIGIN_LABEL[ctl.evidence_origin] }} | {{ ENF_LABEL[ctl.enforcement] }} | {{ ctl.finding_refs | join(", ") if ctl.finding_refs else "—" }} |
+{% endfor %}
+
+---
+
+## 6. Nicht technisch geprueft
+
+{% set oos = run.controls | selectattr("verdict", "equalto", "out_of_technical_scope") | list %}
+{% set nev = run.controls | selectattr("verdict", "equalto", "insufficient_evidence") | list %}
+{% if not oos and not nev %}
+Alle Katalogeintraege im Scope waren technisch pruefbar.
+
+{% else %}
+Die folgenden Anforderungen lassen sich aus Code, IaC oder Runtime-Konfiguration **nicht** belegen. Sie gelten weder als erfuellt noch als verletzt. Ein Nachweis erfordert Dokumente, Prozesse oder Belege ausserhalb des technischen Pruefumfangs.
+
+{% for ctl in oos %}
+**{{ ctl.framework_id }} · {{ ctl.control_id }}** — {{ ctl.title }}
+
+{{ ctl.rationale }}
+
+{% endfor %}
+{% if nev %}
+**Unzureichende Evidenz.** Diese Eintraege sind ein Mangel des Laufs, kein Ergebnis. Collector-Fehler, fehlende Berechtigung oder Timeout:
+
+{% for ctl in nev %}
+- **{{ ctl.framework_id }} · {{ ctl.control_id }}** — {{ ctl.rationale }}
+{% endfor %}
+
+{% endif %}
+{% endif %}
+---
+
+## 7. Evidenzanhang
+
+- **Bundle:** `{{ run.evidence_bundle.path }}`
+- **SHA-256:** `{{ run.evidence_bundle.sha256 }}`
+- **Erhoben:** {{ run.evidence_bundle.collected_at }}
+
+Jedes Urteil in Abschnitt 4 und 5 ist gegen diesen fixierten Snapshot reproduzierbar. Collection und Bewertung liefen in getrennten Phasen.
+
+### Collectors
+
+| Collector | Version | Status |
+|---|---|---|
+{% for c in run.tooling.collectors %}
+| {{ c.name }} | {{ c.version }} | {{ c.status }}{% if c.get('error') %} — {{ c.get('error') }}{% endif %} |
+{% endfor %}
+
+### Abfragen
+
+{% for f in run.findings %}
+**`{{ f.finding_id }}`** ({{ f.collector }})
+
+```
+{{ f.evidence_ref.query }}
+```
+
+Antwort-Hash: `{{ f.evidence_ref.response_sha256 }}`
+
+{% endfor %}

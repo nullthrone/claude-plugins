@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json.schemastore.org/claude-plugin-marketplace-manifest.json",
+  "name": "nullthrone",
+  "owner": {
+    "name": "Thomas Sprock",
+    "email": "bettercallthomas@outlook.com",
+    "url": "https://github.com/nullthrone"
+  },
+  "description": "Claude Code plugin marketplace by Thomas Sprock",
+  "version": "0.1.0",
+  "metadata": {
+    "pluginRoot": "./plugins"
+  },
+  "plugins": [
+    {
+      "name": "compliance-audit",
+      "source": "./compliance-audit",
+      "description": "Audits code, IaC and runtime configuration against German and EU regulatory frameworks (BSI IT-Grundschutz, Cyber Resilience Act, GDPR). Emits canonical JSON; the report is rendered deterministically from it. Makes no conformity statement.",
+      "version": "0.1.1",
+      "author": {
+        "name": "Thomas Sprock",
+        "url": "https://github.com/nullthrone"
+      },
+      "license": "MIT",
+      "keywords": [
+        "compliance",
+        "bsi",
+        "grundschutz",
+        "cra",
+        "dsgvo",
+        "gdpr",
+        "nis2",
+        "audit",
+        "sbom"
+      ]
+    }
+  ]
+}

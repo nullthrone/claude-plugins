@@ -1,0 +1,112 @@
+# Evidence Primitives
+#
+# Eigener Namensraum. Ein Primitive ist eine deterministische Pruefung gegen ein
+# konkretes Pruefobjekt. Frameworks mappen n:m hierauf, niemals umgekehrt.
+#
+# Fremd-IDs (CIS Benchmark, ATT&CK) laufen ausschliesslich als optionales
+# `source_ref` mit und sind fuer die Auswertung bedeutungslos.
+
+version: "0.1.0"
+
+primitives:
+
+  # ---- Kryptografie -------------------------------------------------------
+  - id: CRYPTO.TLS.MIN_VERSION
+    title: "TLS-Mindestversion in Transport-Konfiguration"
+    object: [iac, runtime]
+    collectors: [checkov, tfsec, gcloud]
+    query:
+      terraform: "google_compute_ssl_policy.min_tls_version"
+      gcloud: "gcloud compute ssl-policies list --format=json"
+    expected: ">= TLS1_2"
+    severity_default: high
+    source_ref: "CIS-GCP-3.9"     # nur Provenance, nicht auswertungsrelevant
+
+  - id: CRYPTO.KEY.CUSTOMER_MANAGED
+    title: "Kundenverwaltete Schluessel (CMEK) fuer Datenspeicher"
+    object: [iac, runtime]
+    collectors: [gcloud]
+    query:
+      gcloud: "gcloud asset search-all-resources --asset-types=storage.googleapis.com/Bucket --format=json"
+    expected: "encryption.kmsKeyName is set"
+    severity_default: high
+
+  - id: CRYPTO.KEY.ENFORCEMENT
+    title: "CMEK-Pflicht per Org Policy durchgesetzt"
+    object: [runtime]
+    collectors: [gcloud]
+    query:
+      gcloud: "gcloud resource-manager org-policies describe gcp.restrictNonCmekServices --organization=$ORG_ID --format=json"
+    expected: "listPolicy enforced, not dry-run"
+    enforcement_probe: true       # dieses Primitive misst Durchsetzung, nicht Zustand
+    severity_default: medium
+
+  # ---- Software-Supply-Chain ---------------------------------------------
+  - id: SBOM.PRESENT
+    title: "SBOM existiert und ist maschinenlesbar"
+    object: [repo, build]
+    collectors: [syft]
+    expected: "CycloneDX >= 1.5 oder SPDX >= 2.3"
+    severity_default: high
+
+  - id: SBOM.FIELDS.TR03183
+    title: "SBOM erfuellt die Feldanforderungen aus BSI TR-03183-2"
+    object: [build]
+    collectors: [sbom-validator]
+    expected: "component.supplier, component.version, component.hashes, component.licenses je Top-Level-Komponente"
+    severity_default: medium
+
+  - id: DEP.CVE.KNOWN_EXPLOITED
+    title: "Aktiv ausgenutzte Schwachstellen in Abhaengigkeiten"
+    object: [repo, build]
+    collectors: [grype, trivy]
+    expected: "kein CVE aus KEV-Katalog ohne Fix oder VEX-Begruendung"
+    severity_default: critical
+
+  # ---- Datenlokalisation --------------------------------------------------
+  - id: DATA.RESIDENCY.STATE
+    title: "Tatsaechliche Region aller datenhaltenden Ressourcen"
+    object: [runtime]
+    collectors: [gcloud]
+    query:
+      gcloud: "gcloud asset search-all-resources --format='json(name,assetType,location)'"
+    expected: "location in $ALLOWED_REGIONS"
+    severity_default: high
+
+  - id: DATA.RESIDENCY.ENFORCEMENT
+    title: "Regionsbindung per Org Policy durchgesetzt"
+    object: [runtime]
+    collectors: [gcloud]
+    query:
+      gcloud: "gcloud resource-manager org-policies describe gcp.resourceLocations --organization=$ORG_ID --format=json"
+    expected: "listPolicy enforced mit allowedValues, kein dry-run"
+    enforcement_probe: true
+    severity_default: high
+
+  - id: PROVIDER.ATTESTATION.SCOPE
+    title: "Genutzte Dienste liegen im Scope der Provider-Attestierung"
+    object: [runtime, external]
+    collectors: [gcloud, attestation-scope-checker]
+    method: >
+      Ist-Dienstliste aus asset inventory schneiden gegen die produktscharfe
+      Scope-Liste des Testats (C5, ISO 27017, SOC 2 Type II). Delta = Finding.
+    expected: "services_out_of_scope == []"
+    severity_default: medium
+
+  # ---- Protokollierung ----------------------------------------------------
+  - id: LOG.DATA_ACCESS.ENABLED
+    title: "Data-Access-Audit-Logs aktiviert"
+    object: [runtime]
+    collectors: [gcloud]
+    query:
+      gcloud: "gcloud projects get-iam-policy $PROJECT --format='json(auditConfigs)'"
+    expected: "auditConfigs enthaelt DATA_READ und DATA_WRITE"
+    note: "Per Default deaktiviert. 'Logs vorhanden' ist ohne diese Pruefung wertlos."
+    severity_default: high
+
+  - id: LOG.PII.ABSENT
+    title: "Keine personenbezogenen Daten in Anwendungslogs"
+    object: [repo]
+    collectors: [semgrep]
+    evidence_class_hint: B        # erfordert PII-Klassifikation, kein reiner Musterabgleich
+    severity_default: high

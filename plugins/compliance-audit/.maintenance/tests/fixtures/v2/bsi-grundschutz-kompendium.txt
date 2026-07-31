@@ -1,0 +1,18 @@
+CON.1 Kryptokonzept
+CON.1.A1 Auswahl geeigneter kryptografischer Verfahren (B)
+Es MUESSEN geeignete kryptografische Verfahren ausgewaehlt werden. Fuer die
+Transportverschluesselung MUSS mindestens TLS 1.3 verwendet werden.
+Seite 12 von 800
+
+OPS.1.1.5 Protokollierung
+OPS.1.1.5.A3 Konfiguration der Protokollierung (B)
+Die Protokollierung MUSS so konfiguriert werden, dass sicherheitsrelevante
+Ereignisse erfasst werden.
+
+ORP.3 Sensibilisierung und Schulung
+ORP.3.A1 Sensibilisierung der Institutionsleitung (B)
+Die Institutionsleitung MUSS fuer Informationssicherheit sensibilisiert werden.
+
+SYS.1.6 Containerisierung
+SYS.1.6.A1 Planung des Container-Einsatzes (B)
+Der Einsatz von Containern MUSS geplant werden.

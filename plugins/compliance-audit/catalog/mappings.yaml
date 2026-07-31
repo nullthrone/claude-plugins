@@ -1,0 +1,120 @@
+# Framework -> Control -> Primitive
+#
+# n:m. Ein Primitive bedient beliebig viele Controls in beliebig vielen Frameworks.
+# Genau das ist der Grund fuer die Zwischenschicht: CRYPTO.TLS.MIN_VERSION wird
+# einmal implementiert und bedient BSI CON.1, ISO A.8.24, DSGVO Art. 32 und
+# § 30 Abs. 2 Nr. 8 BSIG gleichzeitig.
+#
+# WICHTIG: requirement_ref enthaelt ausschliesslich Fundstellen, niemals Normtext.
+# ISO-27001- und VDA-ISA-Texte sind lizenzpflichtig und duerfen nicht ins Repo.
+#
+# HINWEIS ZUR VERIFIKATION: Die konkreten Anforderungs-IDs (CON.1.A1 etc.) sind
+# gegen die jeweils gueltige Edition des IT-Grundschutz-Kompendiums zu pruefen und
+# im Feld `edition` zu fixieren. Der Katalog referenziert, er zitiert nicht.
+
+version: "0.1.0"
+
+frameworks:
+
+  # =========================================================================
+  bsi-grundschutz:
+    version: "Kompendium 2023"
+    profiles: [Basis, Standard, Kern]
+    controls:
+
+      - control_id: "CON.1.A1"
+        title: "Auswahl geeigneter kryptografischer Verfahren"
+        requirement_ref:
+          citation: "BSI IT-Grundschutz-Kompendium, Baustein CON.1 Kryptokonzept, Anforderung A1"
+          edition: "2023"
+        profile: Basis
+        evidence_class: A
+        evidence_origin: collected
+        primitives:
+          - CRYPTO.TLS.MIN_VERSION
+          - CRYPTO.KEY.CUSTOMER_MANAGED
+        verdict_rule: "all_pass"
+
+      - control_id: "OPS.1.1.5.A3"
+        title: "Konfiguration der Protokollierung"
+        requirement_ref:
+          citation: "BSI IT-Grundschutz-Kompendium, Baustein OPS.1.1.5 Protokollierung, Anforderung A3"
+          edition: "2023"
+        profile: Basis
+        evidence_class: A
+        evidence_origin: collected
+        primitives:
+          - LOG.DATA_ACCESS.ENABLED
+        verdict_rule: "all_pass"
+
+      - control_id: "ORP.3.A1"
+        title: "Sensibilisierung der Institutionsleitung fuer Informationssicherheit"
+        requirement_ref:
+          citation: "BSI IT-Grundschutz-Kompendium, Baustein ORP.3 Sensibilisierung und Schulung"
+          edition: "2023"
+        profile: Basis
+        evidence_class: C          # erzwingt verdict=out_of_technical_scope per Schema
+        evidence_origin: organizational
+        primitives: []
+
+  # =========================================================================
+  cra:
+    version: "VO (EU) 2024/2847"
+    controls:
+
+      - control_id: "ANNEX-I.II.1"
+        title: "SBOM in maschinenlesbarem Format, Top-Level-Abhaengigkeiten"
+        requirement_ref:
+          citation: "VO (EU) 2024/2847, Anhang I Teil II Nr. 1; konkretisiert durch BSI TR-03183-2"
+          url: "https://eur-lex.europa.eu/eli/reg/2024/2847/oj"
+        evidence_class: A
+        evidence_origin: collected
+        primitives:
+          - SBOM.PRESENT
+          - SBOM.FIELDS.TR03183
+        verdict_rule: "all_pass"
+        deadline: "2027-12-11"
+
+      - control_id: "ANNEX-I.II.2"
+        title: "Behandlung und Behebung von Schwachstellen ohne Verzug"
+        requirement_ref:
+          citation: "VO (EU) 2024/2847, Anhang I Teil II Nr. 2"
+        evidence_class: A
+        evidence_origin: collected
+        primitives:
+          - DEP.CVE.KNOWN_EXPLOITED
+        verdict_rule: "all_pass"
+        deadline: "2026-09-11"     # Meldepflicht aktiv ausgenutzter Schwachstellen
+
+  # =========================================================================
+  dsgvo:
+    version: "VO (EU) 2016/679"
+    controls:
+
+      - control_id: "Art.44"
+        title: "Allgemeine Grundsaetze der Datenuebermittlung in Drittlaender"
+        requirement_ref:
+          citation: "VO (EU) 2016/679, Art. 44 ff."
+          url: "https://eur-lex.europa.eu/eli/reg/2016/679/oj"
+        evidence_class: B          # erfordert Interpretation -> confidence Pflicht
+        evidence_origin: inherited
+        primitives:
+          - DATA.RESIDENCY.STATE
+          - DATA.RESIDENCY.ENFORCEMENT
+          - PROVIDER.ATTESTATION.SCOPE
+        verdict_rule: "weakest_link"
+        note: >
+          Zustandskonformitaet ohne Enforcement ergibt hoechstens 'partial'.
+          Eine Provider-Attestierung zaehlt nur bei geprueftem Produkt-Scope
+          und erfuellten CUECs.
+
+      - control_id: "Art.32.1.a"
+        title: "Verschluesselung personenbezogener Daten"
+        requirement_ref:
+          citation: "VO (EU) 2016/679, Art. 32 Abs. 1 lit. a"
+        evidence_class: A
+        evidence_origin: collected
+        primitives:
+          - CRYPTO.TLS.MIN_VERSION
+          - CRYPTO.KEY.CUSTOMER_MANAGED
+        verdict_rule: "all_pass"

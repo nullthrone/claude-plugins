@@ -1,0 +1,308 @@
+{
+  "schema_version": "1.0.0",
+  "assurance_level": "technical-evidence-only",
+  "run_id": "9f2c1a44-8b3e-4d16-9c07-5a1e2b7d0f31",
+  "started_at": "2026-07-11T08:14:02Z",
+  "finished_at": "2026-07-11T08:16:41Z",
+
+  "tooling": {
+    "auditor_version": "0.1.0",
+    "catalog_version": "0.1.0",
+    "collectors": [
+      { "name": "checkov", "version": "3.2.99", "status": "ok" },
+      { "name": "syft", "version": "1.18.1", "status": "ok" },
+      { "name": "grype", "version": "0.87.0", "status": "ok" },
+      { "name": "gcloud", "version": "512.0.0", "status": "ok" },
+      { "name": "semgrep", "version": "1.108.0", "status": "ok" }
+    ]
+  },
+
+  "target": {
+    "repo": "git@github.com:example-org/kenny.git",
+    "commit_sha": "4c1f9ae7d2b83a06e5c1147fbb2d9e0a3c7185df",
+    "branch": "main",
+    "iac_paths": ["infra/terraform"],
+    "cloud_scope": [
+      {
+        "provider": "gcp",
+        "scope_uri": "organizations/412887330219",
+        "credential_mode": "read-only"
+      }
+    ]
+  },
+
+  "frameworks": [
+    { "id": "bsi-grundschutz", "version": "Kompendium 2023", "profile": "Basis" },
+    { "id": "cra", "version": "VO (EU) 2024/2847" },
+    { "id": "dsgvo", "version": "VO (EU) 2016/679" }
+  ],
+
+  "evidence_bundle": {
+    "bundle_id": "eb-9f2c1a44",
+    "path": ".compliance/evidence/eb-9f2c1a44.tar.zst",
+    "sha256": "6b1c0e83a94f27d5518ab0cc3f7e21904d6a8b1259ce73f0a4b8d2e6c19f8073",
+    "collected_at": "2026-07-11T08:14:05Z"
+  },
+
+  "coverage": [
+    {
+      "framework_id": "bsi-grundschutz",
+      "profile": "Basis",
+      "controls_in_catalog": 3,
+      "technically_assessable": 2,
+      "assessed": 2,
+      "passed": 1,
+      "failed": 1,
+      "partial": 0,
+      "not_applicable": 0,
+      "out_of_technical_scope": 1,
+      "insufficient_evidence": 0
+    },
+    {
+      "framework_id": "cra",
+      "controls_in_catalog": 2,
+      "technically_assessable": 2,
+      "assessed": 2,
+      "passed": 1,
+      "failed": 0,
+      "partial": 1,
+      "not_applicable": 0,
+      "out_of_technical_scope": 0,
+      "insufficient_evidence": 0
+    },
+    {
+      "framework_id": "dsgvo",
+      "controls_in_catalog": 2,
+      "technically_assessable": 2,
+      "assessed": 2,
+      "passed": 0,
+      "failed": 1,
+      "partial": 1,
+      "not_applicable": 0,
+      "out_of_technical_scope": 0,
+      "insufficient_evidence": 0
+    }
+  ],
+
+  "controls": [
+    {
+      "control_id": "CON.1.A1",
+      "framework_id": "bsi-grundschutz",
+      "title": "Auswahl geeigneter kryptografischer Verfahren",
+      "requirement_ref": {
+        "citation": "BSI IT-Grundschutz-Kompendium, Baustein CON.1 Kryptokonzept, Anforderung A1",
+        "edition": "2023"
+      },
+      "evidence_class": "A",
+      "evidence_origin": "collected",
+      "verdict": "fail",
+      "enforcement": "none",
+      "rationale": "Die SSL-Policy des externen Load Balancers erlaubt TLS 1.0 und enthaelt CBC-Cipher-Suites. Der GCS-Bucket mit Kundendaten nutzt Google-managed Keys statt CMEK. Beide Abweichungen sind in Terraform kodiert und wirken sich unmittelbar auf die produktive Umgebung aus.",
+      "finding_refs": ["F-001", "F-002"],
+      "remediation": {
+        "summary": "min_tls_version auf TLS_1_2 setzen und Profil MODERN oder RESTRICTED waehlen. Bucket auf CMEK mit Key-Ring in europe-west3 umstellen.",
+        "refs": ["infra/terraform/lb.tf:42", "infra/terraform/storage.tf:17"]
+      }
+    },
+
+    {
+      "control_id": "OPS.1.1.5.A3",
+      "framework_id": "bsi-grundschutz",
+      "title": "Konfiguration der Protokollierung",
+      "requirement_ref": {
+        "citation": "BSI IT-Grundschutz-Kompendium, Baustein OPS.1.1.5 Protokollierung, Anforderung A3",
+        "edition": "2023"
+      },
+      "evidence_class": "A",
+      "evidence_origin": "collected",
+      "verdict": "pass",
+      "enforcement": "enforced",
+      "rationale": "DATA_READ und DATA_WRITE sind in der IAM-Audit-Konfiguration aller Projekte im Scope aktiviert und ueber eine Org Policy erzwungen. Ein Projekt kann die Konfiguration nicht lokal ueberschreiben.",
+      "finding_refs": []
+    },
+
+    {
+      "control_id": "ORP.3.A1",
+      "framework_id": "bsi-grundschutz",
+      "title": "Sensibilisierung der Institutionsleitung fuer Informationssicherheit",
+      "requirement_ref": {
+        "citation": "BSI IT-Grundschutz-Kompendium, Baustein ORP.3 Sensibilisierung und Schulung",
+        "edition": "2023"
+      },
+      "evidence_class": "C",
+      "evidence_origin": "organizational",
+      "verdict": "out_of_technical_scope",
+      "enforcement": "n/a",
+      "rationale": "Schulungsnachweise und Leitungsbeteiligung sind aus Code, IaC und Runtime-Konfiguration prinzipiell nicht ableitbar. Nachweis erfordert Dokumente ausserhalb des technischen Scopes.",
+      "finding_refs": []
+    },
+
+    {
+      "control_id": "ANNEX-I.II.1",
+      "framework_id": "cra",
+      "title": "SBOM in maschinenlesbarem Format, Top-Level-Abhaengigkeiten",
+      "requirement_ref": {
+        "citation": "VO (EU) 2024/2847, Anhang I Teil II Nr. 1; konkretisiert durch BSI TR-03183-2",
+        "url": "https://eur-lex.europa.eu/eli/reg/2024/2847/oj"
+      },
+      "evidence_class": "A",
+      "evidence_origin": "collected",
+      "verdict": "partial",
+      "enforcement": "advisory",
+      "rationale": "Eine CycloneDX-1.6-SBOM wird im Build erzeugt und als Artefakt abgelegt. Bei 34 von 211 Komponenten fehlt das Feld supplier, bei 12 fehlen Hashes. TR-03183-2 fordert beide Felder. Die SBOM-Erzeugung ist im Workflow nicht als Pflichtschritt gegated, ein Build ohne SBOM ist moeglich.",
+      "finding_refs": ["F-003"],
+      "remediation": {
+        "summary": "syft-Konfiguration um Supplier-Aufloesung erweitern, Hash-Berechnung fuer alle Komponenten erzwingen, SBOM-Erzeugung als Required Check im Branch-Protection-Ruleset verankern.",
+        "refs": [".github/workflows/build.yml", "BSI TR-03183-2, Abschnitt 5"]
+      }
+    },
+
+    {
+      "control_id": "ANNEX-I.II.2",
+      "framework_id": "cra",
+      "title": "Behandlung und Behebung von Schwachstellen ohne Verzug",
+      "requirement_ref": {
+        "citation": "VO (EU) 2024/2847, Anhang I Teil II Nr. 2"
+      },
+      "evidence_class": "A",
+      "evidence_origin": "collected",
+      "verdict": "pass",
+      "enforcement": "enforced",
+      "rationale": "Kein CVE aus dem KEV-Katalog ohne Fix oder VEX-Begruendung. Der Grype-Scan laeuft als Required Check und blockiert Merges bei kritischen Befunden.",
+      "finding_refs": []
+    },
+
+    {
+      "control_id": "Art.44",
+      "framework_id": "dsgvo",
+      "title": "Allgemeine Grundsaetze der Datenuebermittlung in Drittlaender",
+      "requirement_ref": {
+        "citation": "VO (EU) 2016/679, Art. 44 ff.",
+        "url": "https://eur-lex.europa.eu/eli/reg/2016/679/oj"
+      },
+      "evidence_class": "B",
+      "evidence_origin": "inherited",
+      "verdict": "partial",
+      "enforcement": "advisory",
+      "confidence": "medium",
+      "rationale": "Alle 47 datenhaltenden Ressourcen liegen aktuell in europe-west3 und europe-west4. Die Org Policy gcp.resourceLocations ist jedoch nur im dry-run-Modus gesetzt und verhindert eine Ausbringung ausserhalb der EU nicht. Der Zustand ist konform, die Durchsetzung fehlt. Zusaetzlich liegen zwei genutzte Dienste ausserhalb des Scopes des BSI-C5-Testats von Google.",
+      "finding_refs": ["F-004", "F-005"],
+      "inherited_evidence": {
+        "attestation": "BSI C5:2020 Type 2",
+        "provider": "Google Cloud",
+        "valid_until": "2026-09-30",
+        "scope_verified": true,
+        "services_in_scope": [
+          "compute.googleapis.com",
+          "storage.googleapis.com",
+          "cloudkms.googleapis.com",
+          "logging.googleapis.com"
+        ],
+        "services_out_of_scope": [
+          "aiplatform.googleapis.com",
+          "workflows.googleapis.com"
+        ],
+        "cuec_status": "unverified"
+      },
+      "remediation": {
+        "summary": "gcp.resourceLocations von dry-run auf enforced umstellen mit allowedValues in:eu-locations. Fuer die beiden Dienste ausserhalb des C5-Scopes entweder Ersatz waehlen oder eine eigenstaendige Risikobewertung mit Transfer Impact Assessment dokumentieren. CUECs aus dem C5-Testat gegen die eigene Konfiguration pruefen.",
+        "refs": ["Google Cloud C5 Product Scope List", "Art. 46 DSGVO"]
+      }
+    },
+
+    {
+      "control_id": "Art.32.1.a",
+      "framework_id": "dsgvo",
+      "title": "Verschluesselung personenbezogener Daten",
+      "requirement_ref": {
+        "citation": "VO (EU) 2016/679, Art. 32 Abs. 1 lit. a"
+      },
+      "evidence_class": "A",
+      "evidence_origin": "collected",
+      "verdict": "fail",
+      "enforcement": "none",
+      "rationale": "Dieselben Befunde wie bei CON.1.A1. TLS 1.0 am externen Endpunkt und fehlende CMEK auf dem Bucket mit Kundendaten. Das Primitive wird einmal erhoben und bedient beide Controls.",
+      "finding_refs": ["F-001", "F-002"],
+      "remediation": {
+        "summary": "Identisch mit CON.1.A1. Eine Behebung schliesst beide Controls.",
+        "refs": ["infra/terraform/lb.tf:42", "infra/terraform/storage.tf:17"]
+      }
+    }
+  ],
+
+  "findings": [
+    {
+      "finding_id": "F-001",
+      "primitive_id": "CRYPTO.TLS.MIN_VERSION",
+      "source_ref": "CIS-GCP-3.9",
+      "collector": "checkov",
+      "severity": "high",
+      "location": { "file": "infra/terraform/lb.tf", "line": 42 },
+      "observed": "google_compute_ssl_policy.min_tls_version = \"TLS_1_0\", profile = \"COMPATIBLE\"",
+      "expected": "min_tls_version >= \"TLS_1_2\", profile in [MODERN, RESTRICTED]",
+      "evidence_ref": {
+        "bundle_id": "eb-9f2c1a44",
+        "query": "checkov -d infra/terraform --framework terraform -o json",
+        "response_sha256": "a3f0c9128e4b6d7051aa2c83f19e6b40d78c5312ffab90e6c471d0928b3e6a15"
+      }
+    },
+    {
+      "finding_id": "F-002",
+      "primitive_id": "CRYPTO.KEY.CUSTOMER_MANAGED",
+      "collector": "gcloud",
+      "severity": "high",
+      "location": { "resource_uri": "//storage.googleapis.com/projects/kenny-prod/buckets/kenny-customer-data" },
+      "observed": "encryption.kmsKeyName absent (Google-managed key)",
+      "expected": "encryption.kmsKeyName set, key location in EU",
+      "evidence_ref": {
+        "bundle_id": "eb-9f2c1a44",
+        "query": "gcloud asset search-all-resources --asset-types=storage.googleapis.com/Bucket --format=json",
+        "response_sha256": "c72e14b8039fa6d5218cb407e9d13f6205a8c9e14b7d0362fa9e58c1d40b7e29"
+      }
+    },
+    {
+      "finding_id": "F-003",
+      "primitive_id": "SBOM.FIELDS.TR03183",
+      "collector": "sbom-validator",
+      "severity": "medium",
+      "location": { "file": "artifacts/sbom.cdx.json" },
+      "observed": "34/211 Komponenten ohne supplier, 12/211 ohne hashes",
+      "expected": "supplier, version, hashes, licenses je Top-Level-Komponente (TR-03183-2)",
+      "evidence_ref": {
+        "bundle_id": "eb-9f2c1a44",
+        "query": "sbom-validator --profile tr-03183-2 artifacts/sbom.cdx.json --format json",
+        "response_sha256": "5e9b0d3271ac846f0e2b71cd93a4f0186c53d7ba28f1c6094ed7a2b5013fc846"
+      }
+    },
+    {
+      "finding_id": "F-004",
+      "primitive_id": "DATA.RESIDENCY.ENFORCEMENT",
+      "collector": "gcloud",
+      "severity": "high",
+      "location": { "resource_uri": "organizations/412887330219/policies/gcp.resourceLocations" },
+      "observed": "listPolicy set, dryRunSpec only, spec absent",
+      "expected": "spec.rules[].values.allowedValues = [in:eu-locations], enforced",
+      "evidence_ref": {
+        "bundle_id": "eb-9f2c1a44",
+        "query": "gcloud resource-manager org-policies describe gcp.resourceLocations --organization=412887330219 --format=json",
+        "response_sha256": "b18d4a0c7f39e526c04b8d71fa2e690358c1b7d4092ae6f3c8150b2ad97e4f6c"
+      }
+    },
+    {
+      "finding_id": "F-005",
+      "primitive_id": "PROVIDER.ATTESTATION.SCOPE",
+      "collector": "attestation-scope-checker",
+      "severity": "medium",
+      "location": { "resource_uri": "organizations/412887330219" },
+      "observed": "2 genutzte Dienste ausserhalb der C5-Scope-Liste: aiplatform.googleapis.com, workflows.googleapis.com",
+      "expected": "alle genutzten Dienste in der produktscharfen Scope-Liste des Testats",
+      "evidence_ref": {
+        "bundle_id": "eb-9f2c1a44",
+        "query": "gcloud asset search-all-resources --format='json(assetType)' | attestation-scope-checker --attestation c5-2020 --provider gcp",
+        "response_sha256": "d40f9c31ba7e0685c2f14ad83b96e072513cfa9d6e820b174c3d5f9a2e6018bb"
+      }
+    }
+  ],
+
+  "executive_summary": "Der Lauf prueft drei Rahmenwerke gegen Repository, Terraform-Definitionen und die GCP-Organisation. Der schwerwiegendste Befund betrifft die Transportverschluesselung: Der externe Load Balancer akzeptiert TLS 1.0, und der Bucket mit Kundendaten laeuft ohne kundenverwalteten Schluessel. Beide Abweichungen schlagen gleichzeitig auf BSI CON.1.A1 und Art. 32 Abs. 1 lit. a DSGVO durch. Bei der Datenlokalisation ist der Zustand konform, die Durchsetzung fehlt jedoch: Die Org Policy gcp.resourceLocations laeuft im dry-run-Modus und verhindert eine Ausbringung ausserhalb der EU nicht. Zwei genutzte Google-Dienste liegen ausserhalb des Scopes des herangezogenen C5-Testats; die ererbte Evidenz traegt dort nicht. Die SBOM existiert, erfuellt die Feldanforderungen aus TR-03183-2 aber nur teilweise, was mit Blick auf den 11. Dezember 2027 vor der eigentlichen Frist behoben werden sollte. Von acht Katalogeintraegen liegt einer ausserhalb des technischen Scopes und erfordert organisatorische Nachweise."
+}

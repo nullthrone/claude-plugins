@@ -1,0 +1,621 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nullthrone/claude-plugins/plugins/compliance-audit/schema/compliance/audit-run/v1.json",
+  "title": "Compliance Audit Run",
+  "description": "Kanonisches Ergebnisdokument eines Compliance-Audit-Laufs. Einzige Wahrheitsquelle: der Markdown-Report wird deterministisch hieraus gerendert und nie separat generiert.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "run_id",
+    "started_at",
+    "finished_at",
+    "assurance_level",
+    "tooling",
+    "target",
+    "frameworks",
+    "evidence_bundle",
+    "coverage",
+    "controls",
+    "findings",
+    "executive_summary"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.0.0"
+    },
+    "assurance_level": {
+      "description": "Schema-Konstante. Der Auditor kann strukturell keine Konformitaetsaussage treffen. Es gibt bewusst kein Feld 'compliant'.",
+      "const": "technical-evidence-only"
+    },
+    "run_id": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finished_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "tooling": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "auditor_version",
+        "catalog_version",
+        "collectors"
+      ],
+      "properties": {
+        "auditor_version": {
+          "type": "string"
+        },
+        "catalog_version": {
+          "type": "string"
+        },
+        "collectors": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "version",
+              "status"
+            ],
+            "properties": {
+              "name": {
+                "type": "string"
+              },
+              "version": {
+                "type": "string"
+              },
+              "status": {
+                "enum": [
+                  "ok",
+                  "partial",
+                  "failed",
+                  "skipped"
+                ]
+              },
+              "error": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "catalog_last_verified": {
+          "type": "string",
+          "format": "date",
+          "description": "Last successful watch run. The report warns above 90 days: a compliance report on a stale catalog is not a statement."
+        },
+        "catalog_staleness_days": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "target": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "repo",
+        "commit_sha"
+      ],
+      "properties": {
+        "repo": {
+          "type": "string"
+        },
+        "commit_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{7,40}$"
+        },
+        "branch": {
+          "type": "string"
+        },
+        "iac_paths": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "cloud_scope": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "provider",
+              "scope_uri"
+            ],
+            "properties": {
+              "provider": {
+                "enum": [
+                  "gcp",
+                  "aws",
+                  "azure",
+                  "onprem",
+                  "k8s"
+                ]
+              },
+              "scope_uri": {
+                "type": "string"
+              },
+              "credential_mode": {
+                "enum": [
+                  "read-only",
+                  "unknown"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "frameworks": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "id",
+          "version"
+        ],
+        "properties": {
+          "id": {
+            "enum": [
+              "bsi-grundschutz",
+              "cra",
+              "dsgvo",
+              "iso27001",
+              "nis2",
+              "dora",
+              "tisax"
+            ]
+          },
+          "version": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "evidence_bundle": {
+      "description": "Fixierter Snapshot. Phase 1 (Collection) erzeugt ihn, Phase 2 (Verdict) bewertet ausschliesslich gegen ihn.",
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "bundle_id",
+        "path",
+        "sha256",
+        "collected_at"
+      ],
+      "properties": {
+        "bundle_id": {
+          "type": "string"
+        },
+        "path": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "collected_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      }
+    },
+    "coverage": {
+      "description": "Steht bewusst vor den Controls. Ohne Deckungsgrad ist jede Pass-Quote irrefuehrend.",
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": [
+          "framework_id",
+          "controls_in_catalog",
+          "technically_assessable",
+          "assessed",
+          "passed",
+          "failed",
+          "partial",
+          "not_applicable",
+          "out_of_technical_scope",
+          "insufficient_evidence"
+        ],
+        "properties": {
+          "framework_id": {
+            "type": "string"
+          },
+          "profile": {
+            "type": "string"
+          },
+          "controls_in_catalog": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "technically_assessable": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "assessed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "passed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "failed": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "partial": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "not_applicable": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "out_of_technical_scope": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "insufficient_evidence": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      }
+    },
+    "controls": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/control"
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/finding"
+      }
+    },
+    "executive_summary": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 1200,
+      "description": "LLM-generiert, aber schema-gebunden. Wird vom Renderer uebernommen, nicht neu formuliert."
+    }
+  },
+  "$defs": {
+    "control": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "control_id",
+        "framework_id",
+        "title",
+        "requirement_ref",
+        "evidence_class",
+        "evidence_origin",
+        "verdict",
+        "enforcement",
+        "rationale",
+        "finding_refs"
+      ],
+      "properties": {
+        "control_id": {
+          "type": "string"
+        },
+        "framework_id": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "requirement_ref": {
+          "description": "Fundstelle, kein Normtext. ISO- und VDA-Texte duerfen nicht ins Repo.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "citation"
+          ],
+          "properties": {
+            "citation": {
+              "type": "string"
+            },
+            "edition": {
+              "type": "string"
+            },
+            "url": {
+              "type": "string",
+              "format": "uri"
+            }
+          }
+        },
+        "evidence_class": {
+          "description": "A = deterministisch pruefbar. B = interpretationsbeduerftig, LLM-Urteil erlaubt. C = organisatorisch, technisch nicht pruefbar.",
+          "enum": [
+            "A",
+            "B",
+            "C"
+          ]
+        },
+        "evidence_origin": {
+          "enum": [
+            "collected",
+            "inherited",
+            "customer-responsibility",
+            "organizational"
+          ]
+        },
+        "verdict": {
+          "enum": [
+            "pass",
+            "fail",
+            "partial",
+            "not_applicable",
+            "out_of_technical_scope",
+            "insufficient_evidence"
+          ]
+        },
+        "enforcement": {
+          "description": "Zustand vs. Durchsetzung. Ein konformer Zustand ohne Enforcement ist ein Snapshot ohne Dauerhaftigkeitsaussage.",
+          "enum": [
+            "enforced",
+            "advisory",
+            "none",
+            "n/a"
+          ]
+        },
+        "confidence": {
+          "enum": [
+            "high",
+            "medium",
+            "low"
+          ]
+        },
+        "rationale": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 600
+        },
+        "finding_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "inherited_evidence": {
+          "description": "Provider-Attestierung. Nur gueltig, wenn das konkrete Produkt im Scope liegt, das Testat zeitlich gilt und die CUECs erfuellt sind.",
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "attestation",
+            "provider",
+            "scope_verified"
+          ],
+          "properties": {
+            "attestation": {
+              "type": "string"
+            },
+            "provider": {
+              "type": "string"
+            },
+            "valid_until": {
+              "type": "string",
+              "format": "date"
+            },
+            "scope_verified": {
+              "description": "Wurde die genutzte Dienstliste gegen die produktscharfe Scope-Liste des Testats geschnitten?",
+              "type": "boolean"
+            },
+            "services_in_scope": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "services_out_of_scope": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "cuec_status": {
+              "enum": [
+                "met",
+                "not_met",
+                "unverified"
+              ]
+            }
+          }
+        },
+        "remediation": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "summary"
+          ],
+          "properties": {
+            "summary": {
+              "type": "string",
+              "maxLength": 600
+            },
+            "refs": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          }
+        }
+      },
+      "allOf": [
+        {
+          "description": "confidence ist Pflicht bei Klasse B und dort allein sinnvoll.",
+          "if": {
+            "properties": {
+              "evidence_class": {
+                "const": "B"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "confidence"
+            ]
+          }
+        },
+        {
+          "description": "Klasse C kann kein technisches Urteil tragen.",
+          "if": {
+            "properties": {
+              "evidence_class": {
+                "const": "C"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "verdict": {
+                "const": "out_of_technical_scope"
+              },
+              "enforcement": {
+                "const": "n/a"
+              }
+            }
+          }
+        },
+        {
+          "description": "Ein fail oder partial ohne Finding ist eine Behauptung.",
+          "if": {
+            "properties": {
+              "verdict": {
+                "enum": [
+                  "fail",
+                  "partial"
+                ]
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "finding_refs": {
+                "minItems": 1
+              }
+            },
+            "required": [
+              "remediation"
+            ]
+          }
+        },
+        {
+          "description": "Ererbte Evidenz erfordert die Attestierungspruefung.",
+          "if": {
+            "properties": {
+              "evidence_origin": {
+                "const": "inherited"
+              }
+            }
+          },
+          "then": {
+            "required": [
+              "inherited_evidence"
+            ]
+          }
+        }
+      ]
+    },
+    "finding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "finding_id",
+        "primitive_id",
+        "collector",
+        "severity",
+        "observed",
+        "expected",
+        "evidence_ref"
+      ],
+      "properties": {
+        "finding_id": {
+          "type": "string"
+        },
+        "primitive_id": {
+          "description": "Eigener Namensraum. Fremd-IDs (z.B. CIS) nur als optionale Provenance.",
+          "type": "string"
+        },
+        "source_ref": {
+          "type": "string"
+        },
+        "collector": {
+          "type": "string"
+        },
+        "severity": {
+          "enum": [
+            "critical",
+            "high",
+            "medium",
+            "low",
+            "info"
+          ]
+        },
+        "location": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "file": {
+              "type": "string"
+            },
+            "line": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "resource_uri": {
+              "type": "string"
+            }
+          }
+        },
+        "observed": {
+          "type": "string"
+        },
+        "expected": {
+          "type": "string"
+        },
+        "evidence_ref": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "bundle_id",
+            "query",
+            "response_sha256"
+          ],
+          "properties": {
+            "bundle_id": {
+              "type": "string"
+            },
+            "query": {
+              "type": "string"
+            },
+            "response_sha256": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{64}$"
+            }
+          }
+        }
+      }
+    }
+  }
+}

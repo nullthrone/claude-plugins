@@ -1,0 +1,135 @@
+# Change-detection sources.
+#
+# This file is consumed by scripts/watch.py, which is deliberately LLM-free:
+# fetch, hash, diff. Interpretation happens later, in the catalog-curator
+# subagent, and only ever results in a pull request — never in a direct
+# mutation of the catalog. See docs/decisions/0002.
+#
+# Three watcher types:
+#   text_diff  — versioned document at a stable URL. Deterministic diff.
+#   publication — feed of new documents. No diff; triage only.
+#   deadline   — no external source at all. Pure date arithmetic over the
+#                `deadline` fields already present in mappings.yaml.
+
+version: "0.1.1"
+
+defaults:
+  interval: weekly
+  timeout_seconds: 60
+  user_agent: "compliance-audit/0.1 (+https://github.com/nullthrone/claude-plugins)"
+
+sources:
+
+  # ---------------------------------------------------------------- text_diff
+  - id: bsi-grundschutz-kompendium
+    type: text_diff
+    framework: bsi-grundschutz
+    url: "https://www.bsi.bund.de/SharedDocs/Downloads/DE/BSI/Grundschutz/Kompendium/IT_Grundschutz_Kompendium_Edition2023.pdf"
+    extractor: bsi_kompendium
+    # The extractor is what decides whether this is useful or noise. A raw diff
+    # of an 800-page PDF is unusable. bsi_kompendium splits the text layer into
+    # building blocks (CON.1, SYS.1.6, ...) and hashes each block separately, so
+    # a change surfaces as "CON.1 changed" rather than "the PDF changed".
+    granularity: building_block
+    expect_edition_bump: annually
+    notes: >
+      URL carries the edition year. A 404 is itself the signal that a new
+      edition exists — watch.py treats it as a change event, not an error.
+
+  - id: bsi-tr-03183-2
+    type: text_diff
+    framework: cra
+    url: "https://www.bsi.bund.de/SharedDocs/Downloads/EN/BSI/Publications/TechGuidelines/TR03183/BSI-TR-03183-2.pdf"
+    extractor: pdf_sections
+    granularity: section
+    notes: "SBOM field requirements. Concretises CRA Annex I Part II No. 1."
+
+  - id: cra-regulation
+    type: text_diff
+    framework: cra
+    url: "https://eur-lex.europa.eu/legal-content/EN/TXT/HTML/?uri=CELEX:32024R2847"
+    extractor: eurlex_html
+    granularity: article
+    interval: monthly
+    notes: >
+      The base text is final and will not move. Watched anyway because
+      corrigenda (Berichtigungen) are published against the same CELEX id and
+      have silently changed annex numbering in other regulations before.
+
+  - id: gdpr-regulation
+    type: text_diff
+    framework: dsgvo
+    url: "https://eur-lex.europa.eu/legal-content/DE/TXT/HTML/?uri=CELEX:32016R0679"
+    extractor: eurlex_html
+    granularity: article
+    interval: quarterly
+    notes: "Text is stable since 2016. Cheap to watch, near-zero expected signal."
+
+  # -------------------------------------------------------------- publication
+  - id: edpb-guidelines
+    type: publication
+    framework: dsgvo
+    url: "https://www.edpb.europa.eu/our-work-tools/general-guidance/guidelines-recommendations-best-practices_en"
+    extractor: edpb_listing
+    interval: weekly
+    triage_hint: >
+      The GDPR text never changes; its interpretation changes constantly. A
+      falling adequacy decision rewrites the assessment of Art. 44 without a
+      single letter of the regulation moving. A text-diff watcher is blind to
+      this. Route to the curator with control hint Art.44, Art.46, Art.32.
+    relevant_controls: ["Art.44", "Art.46", "Art.32.1.a"]
+
+  - id: bgbl-bsig-amendments
+    type: publication
+    framework: nis2
+    url: "https://www.recht.bund.de/bgbl/1/"
+    extractor: bgbl_listing
+    interval: weekly
+    query: "BSI-Gesetz OR BSIG OR NIS2"
+    triage_hint: >
+      NIS2UmsuCG is in force since 2025-12-06. The NIS2UmsVO (the Rechtsverordnung
+      concretising the ten measures of § 30 BSIG) is still outstanding as of the
+      last catalog review and will be the single largest catalog event when it
+      lands. Treat any hit as high priority.
+
+  - id: oj-l-series-cra
+    type: publication
+    framework: cra
+    url: "https://eur-lex.europa.eu/oj/direct-access.html"
+    extractor: oj_l_series
+    interval: weekly
+    query: "cyber resilience OR 2024/2847 OR harmonised standard"
+    triage_hint: >
+      Watch for delegated acts and, above all, for citations of harmonised
+      standards. Once a harmonised standard is cited in the OJ, it carries a
+      presumption of conformity and becomes the cheapest evidence path for
+      Annex I. Until then the catalog has to reason against Annex I directly.
+
+  # ------------------------------------------------------------------ deadline
+  - id: regulatory-deadlines
+    type: deadline
+    source: "catalog/mappings.yaml"   # reads the `deadline` fields already there
+    lead_time_days: 90
+    action: severity_boost
+    notes: >
+      No network access, no model, no failure mode. Cheapest watcher in the set
+      and in practice the one that prevents the most damage: it raises severity
+      on controls approaching a hard legal date (CRA reporting duty 2026-09-11,
+      full CRA conformity 2027-12-11) before anyone has to remember them.
+
+# ------------------------------------------------------------------------------
+# Deliberately NOT watched.
+#
+# ISO/IEC 27001 and VDA ISA (TISAX) are licensed texts behind a paywall.
+# Scraping them would be a licence breach, and mirroring their content into this
+# repository would be worse. The catalog carries control IDs and our own
+# paraphrases only. Amendment *announcements* could be watched via the ISO
+# catalogue listing; the text cannot. Until someone buys the standard and
+# updates the catalog by hand, iso27001 entries stay pinned to their edition and
+# the report says so.
+# ------------------------------------------------------------------------------
+excluded:
+  - framework: iso27001
+    reason: "Licensed text. Announcement watchable, content not. Manual update only."
+  - framework: tisax
+    reason: "VDA-licensed catalogue. Redistribution prohibited. Out of scope."

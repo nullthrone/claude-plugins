@@ -1,0 +1,57 @@
+{
+  "bgbl-bsig-amendments": {
+    "doc_sha256": "836c1fb5d15fa0b99fbce1cb17de2eef6883db65527be39bb52cb4cec5e6cf5f",
+    "fetched_at": "2026-07-11T03:52:25.756270+00:00",
+    "segments": {
+      "__document__": "836c1fb5d15fa0b99fbce1cb17de2eef6883db65527be39bb52cb4cec5e6cf5f"
+    }
+  },
+  "bsi-grundschutz-kompendium": {
+    "doc_sha256": "6e12524eb56143126912ec45b62069ca3d8222ec382a2c8f9679f93c25f3017f",
+    "fetched_at": "2026-07-11T03:52:25.755677+00:00",
+    "segments": {
+      "CON.1": "0324fe4a4702e7ff56996b0ee1c580732c60f5fdacf3cc76c220cb8bb6da862a",
+      "OPS.1.1.5": "5c86ea52dddfb0b5ef55c4772280a1aa8ea7df6ec5821eb235c33c12a3f56d9d",
+      "ORP.3": "c9347645e4482ac21aa41133c920533d95f993e32e063d2cf7a25cc73150e690"
+    },
+    "text": {}
+  },
+  "bsi-tr-03183-2": {
+    "doc_sha256": "f49a2834f4d4df6e6680cc255c54e03a86051a0b4db9e2ea556b6907782d6323",
+    "fetched_at": "2026-07-11T03:52:25.755902+00:00",
+    "segments": {
+      "__document__": "f49a2834f4d4df6e6680cc255c54e03a86051a0b4db9e2ea556b6907782d6323"
+    },
+    "text": {}
+  },
+  "cra-regulation": {
+    "doc_sha256": "2f82b3aafd98a4dcc51f32c9b1719c08096f9e8ba069900d6a3ee53a382f3699",
+    "fetched_at": "2026-07-11T03:52:25.756123+00:00",
+    "segments": {
+      "__document__": "2f82b3aafd98a4dcc51f32c9b1719c08096f9e8ba069900d6a3ee53a382f3699"
+    },
+    "text": {}
+  },
+  "edpb-guidelines": {
+    "doc_sha256": "476d9711a12240d243b9d04fea5389650e87b700dc4af47c71ffb5a40e0a70fd",
+    "fetched_at": "2026-07-11T03:52:25.756228+00:00",
+    "segments": {
+      "__document__": "476d9711a12240d243b9d04fea5389650e87b700dc4af47c71ffb5a40e0a70fd"
+    }
+  },
+  "gdpr-regulation": {
+    "doc_sha256": "0529f0fc3b3d41aeb675a97cd501abd0d740a3f14b49c634591da6e48dc480f4",
+    "fetched_at": "2026-07-11T03:52:25.756179+00:00",
+    "segments": {
+      "__document__": "0529f0fc3b3d41aeb675a97cd501abd0d740a3f14b49c634591da6e48dc480f4"
+    },
+    "text": {}
+  },
+  "oj-l-series-cra": {
+    "doc_sha256": "ecd7a58f12ff4800f82d6aa62cd833615dfd26a81e059719245eed19406aa798",
+    "fetched_at": "2026-07-11T03:52:25.756344+00:00",
+    "segments": {
+      "__document__": "ecd7a58f12ff4800f82d6aa62cd833615dfd26a81e059719245eed19406aa798"
+    }
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://github.com/nullthrone/claude-plugins/plugins/compliance-audit/schema/compliance/change-record/v1.json",
+  "title": "Change Record",
+  "description": "Output of scripts/watch.py. Deterministic: it says THAT something moved and WHERE, never what it means. Interpretation is the curator's job and produces a pull request, not a catalog mutation.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "generated_at", "catalog_version", "changes", "unreachable"],
+  "properties": {
+    "schema_version": { "const": "1.0.0" },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "catalog_version": { "type": "string" },
+    "changes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_id", "framework", "kind", "summary", "requires_decision"],
+        "properties": {
+          "source_id": { "type": "string" },
+          "framework": { "type": "string" },
+          "kind": {
+            "enum": [
+              "baseline_established",
+              "segment_modified",
+              "segment_added",
+              "segment_removed",
+              "edition_rollover",
+              "publication",
+              "deadline_approaching",
+              "deadline_passed"
+            ]
+          },
+          "segment_id": { "type": ["string", "null"] },
+          "summary": { "type": "string" },
+          "hash_before": { "type": "string" },
+          "hash_after": { "type": "string" },
+          "verbatim_diff": {
+            "description": "Exact text, source language. A paraphrased legal diff is a defect.",
+            "type": "string"
+          },
+          "requires_decision": { "type": "boolean" },
+          "source_url": { "type": "string" },
+          "relevant_controls": { "type": "array", "items": { "type": "string" } }
+        }
+      }
+    },
+    "unreachable": {
+      "description": "A source that could not be reached is NOT 'no changes'. The workflow opens an issue and the staleness clock keeps running.",
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["source_id", "error"],
+        "properties": {
+          "source_id": { "type": "string" },
+          "error": { "type": "string" }
+        }
+      }
+    }
+  }
+}

@@ -137,3 +137,42 @@ def test_watch_never_touches_live_state(tmp_path):
     _watch("v1", "2026-07-11", tmp_path / "sources.json")
     after = live.read_bytes() if live.exists() else None
     assert before == after
+
+
+def test_watch_publication_triage_not_pr(tmp_path):
+    """publication-type sources (edpb-guidelines here) must surface as `kind:
+    publication`, never as segment_modified/_added -- that is what routes them
+    to an issue instead of a PR in /catalog-watch's triage table (legal
+    decision, not editorial). v1 and v2's edpb-guidelines.txt are identical
+    placeholders, so this needs its own fixture set (v3) with real content."""
+    state_path = tmp_path / "sources.json"
+    _watch("v1", "2026-07-11", state_path)
+    rec, _ = _watch("v3", "2026-07-11", state_path, state_reset=False)
+    pub = [c for c in rec["changes"] if c["source_id"] == "edpb-guidelines"]
+    assert len(pub) == 1
+    assert pub[0]["kind"] == "publication"
+    assert pub[0]["requires_decision"] is True
+
+
+def test_watch_unreachable_is_not_no_changes(tmp_path):
+    """A missing fixture simulates a fetch failure deterministically, offline
+    -- no live network dependency to prove that `unreachable` is populated
+    and the exit code is 2, never silently treated as `changes: []`."""
+    state_path = tmp_path / "sources.json"
+    partial = tmp_path / "fixtures-missing-one"
+    partial.mkdir()
+    for f in (ROOT / ".maintenance" / "tests" / "fixtures" / "v1").glob("*.txt"):
+        if f.name != "cra-regulation.txt":
+            (partial / f.name).write_text(f.read_text(encoding="utf-8"), encoding="utf-8")
+
+    out = subprocess.run(
+        [sys.executable, ".maintenance/scripts/watch.py",
+         "--fixtures", str(partial), "--state", str(state_path),
+         "--write-state", "--today", "2026-07-11"],
+        cwd=ROOT, capture_output=True, text=True, check=False,
+    )
+    rec = json.loads(out.stdout)
+    assert out.returncode == 2
+    assert any(u["source_id"] == "cra-regulation" for u in rec["unreachable"])
+    # the all-or-nothing --write-state gate must not have written a baseline
+    assert not state_path.exists()

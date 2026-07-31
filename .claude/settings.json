@@ -9,8 +9,7 @@
       "Bash(git push -f:*)",
       "Bash(git rebase:*)",
       "Bash(git reset --hard:*)",
-      "Edit(plugins/compliance-audit/.maintenance/golden/**)",
-      "Write(plugins/compliance-audit/.maintenance/golden/**)"
+      "Edit(plugins/compliance-audit/.maintenance/golden/**)"
     ],
     "allow": [
       "Read",
@@ -18,7 +17,6 @@
       "Glob",
       "Edit(plugins/compliance-audit/catalog/**)",
       "Edit(plugins/compliance-audit/.maintenance/state/**)",
-      "Write(plugins/compliance-audit/.maintenance/state/**)",
       "Bash(git status:*)",
       "Bash(git diff:*)",
       "Bash(git fetch:*)",

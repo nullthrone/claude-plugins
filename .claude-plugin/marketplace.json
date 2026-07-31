@@ -8,13 +8,10 @@
   },
   "description": "Claude Code plugin marketplace by Thomas Sprock",
   "version": "0.1.0",
-  "metadata": {
-    "pluginRoot": "./plugins"
-  },
   "plugins": [
     {
       "name": "compliance-audit",
-      "source": "./compliance-audit",
+      "source": "./plugins/compliance-audit",
       "description": "Audits code, IaC and runtime configuration against German and EU regulatory frameworks (BSI IT-Grundschutz, Cyber Resilience Act, GDPR). Emits canonical JSON; the report is rendered deterministically from it. Makes no conformity statement.",
       "version": "0.1.1",
       "author": {

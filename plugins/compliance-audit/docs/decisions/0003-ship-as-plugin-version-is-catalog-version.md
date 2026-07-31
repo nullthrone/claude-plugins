@@ -78,3 +78,37 @@ protect. Consumers pin to a ref and update deliberately.
 - Verified: CI rejects a change under `catalog/` without a manifest version bump.
 - Verified: `render.py` resolves `${CLAUDE_PLUGIN_ROOT}` and falls back to its own
   location in a repo checkout.
+
+## Correction (2026-07-31, see ADR 0004)
+
+Both "Verified" claims above turned out to be false as read today, for two
+different reasons — recorded here rather than silently edited, because an ADR
+asserting a verification that did not hold is the same class of defect this
+whole design exists to prevent.
+
+1. **The `components` check never exercised anything.** `plugin.json` has
+   never actually had a `components` key — this manifest relies entirely on
+   Claude Code's default auto-discovery of `skills/`, `agents/`, `commands/`.
+   The old CI step read `m.get("components", {})`, which was always empty, so
+   `bad = []` unconditionally and the step always printed ok. It checked a
+   field that was never populated, from the day this ADR was accepted.
+   Replaced by `.maintenance/scripts/check_not_shipped.py`, which checks the
+   fields the manifest actually uses and additionally scans what actually
+   ships for any reference into `.maintenance/`.
+
+2. **The version-bump gate silently always passed after this plugin was
+   consolidated into a marketplace monorepo** (`nullthrone/claude-plugins`,
+   `plugins/compliance-audit/`). `git diff --name-only` reports paths
+   relative to the repo root; both `check_catalog_bump.py` and
+   `check_version_sync.py` compared that output against plugin-relative
+   literals (`catalog/mappings.yaml`, not
+   `plugins/compliance-audit/catalog/mappings.yaml`), so `touched`/
+   `catalog_touched` was always empty and both gates printed "no catalog
+   changes" regardless of what changed. Fixed via `git rev-parse
+   --show-prefix`; the fix is proven with negative tests (a change without a
+   bump must exit 1) run from three different working directories, not just
+   a green run — a script whose failure mode is silently-always-pass is not
+   verified by observing that it passed once.
+
+Neither gate runs in CI any more; see ADR 0004. Both run locally, as part of
+`/catalog-watch`'s own commit, before it pushes.

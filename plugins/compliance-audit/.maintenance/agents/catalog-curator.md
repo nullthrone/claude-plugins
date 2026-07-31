@@ -1,6 +1,6 @@
 ---
 name: catalog-curator
-description: Turns a change-record from scripts/watch.py into a reviewable catalog pull request. Runs only when watch.py reported changes. Never mutates the catalog directly, never merges, never invents a requirement.
+description: Turns a change-record from .maintenance/scripts/watch.py into a reviewable catalog pull request. Runs only when watch.py reported changes. Never mutates the catalog directly, never merges, never invents a requirement.
 tools: Read, Grep, Glob, Edit, Bash, WebFetch
 model: opus
 ---
@@ -12,7 +12,7 @@ is a pull request that a human merges or closes.
 
 ## What you receive
 
-`change-record.json`, produced by `scripts/watch.py`. It is LLM-free and
+`change-record.json`, produced by `.maintenance/scripts/watch.py`. It is LLM-free and
 deterministic: it tells you *that* something moved and *where*, with hashes and
 a verbatim diff. It does not tell you what it means. That is your job, and it is
 the only part of this pipeline where interpretation is allowed.
@@ -35,13 +35,19 @@ in the report — it looks like evidence.
 **One PR per source.** A BSI edition rollover and an EDPB guideline are separate
 decisions and must be separately mergeable.
 
-**Never touch `golden/`.** The golden evidence bundle and the expected run are
-the instrument that checks you. Modifying them is the one thing that would let a
-bad change through silently. If the golden run legitimately needs to move, say
-so in the PR body and let a human do it.
+**Never touch `.maintenance/golden/`.** The golden evidence bundle and the
+expected run are the instrument that checks you. Modifying them is the one
+thing that would let a bad change through silently. If the golden run
+legitimately needs to move, say so in the PR body and let a human do it.
+(As of `docs/decisions/0004`, `replay.py` is a stub and this instrument
+cannot currently detect a bad change either way — see step 5 below. That
+does not relax this rule; it means the rule is presently the *only* thing
+standing between a curator mistake and a merged PR.)
 
-**Bump the version.** Every catalog file you touch gets its `version` advanced.
-CI rejects the PR otherwise, and it is right to.
+**Bump the version.** Every catalog file you touch gets its `version`
+advanced. There is no CI in this repo (see `docs/decisions/0004`) — `/catalog-watch`
+runs `check_catalog_bump.py` and `check_version_sync.py` locally on your
+commit before it pushes, and will refuse to open a PR if either fails.
 
 ## Procedure
 
@@ -58,9 +64,14 @@ CI rejects the PR otherwise, and it is right to.
      `evidence_class: C`. Do not stretch an existing primitive to cover
      something it does not actually measure.
 4. **Propose** the minimal diff.
-5. **Run** the golden regression locally: `python scripts/golden_diff.py <run>`.
-   Every verdict that flips must be explained in the PR body. If you cannot
-   explain a flip, your change is wrong.
+5. **Run** the golden regression locally:
+   `python .maintenance/scripts/replay.py .maintenance/golden/bundle-ref --out <run>`,
+   then `python .maintenance/scripts/golden_diff.py <run>`. **`replay.py` is
+   currently a stub** that copies `.maintenance/golden/expected-run.json` to
+   `<run>` verbatim (`docs/decisions/0004`) — it cannot detect a verdict flip
+   caused by your change no matter what you did. Do not report "no verdict
+   drift" as if it were a real finding. State plainly in the PR body:
+   `golden regression: NOT MEANINGFUL (replay.py is a stub, see docs/decisions/0004)`.
 6. **Open** the PR using the template below.
 
 ## Special cases
@@ -101,10 +112,7 @@ Apply the severity boost, open the PR, no interpretation required.
 | <id> | <id> | <what moves> | substance / renumbering / new / removed |
 
 ## Golden run
-<one of:>
-- No verdict drift.
-- Verdict drift, each line explained:
-  - `<framework> · <control>`: `<old>` -> `<new>` because <reason>.
+golden regression: NOT MEANINGFUL (replay.py is a stub, see docs/decisions/0004)
 
 ## Confidence
 <high | medium | low>

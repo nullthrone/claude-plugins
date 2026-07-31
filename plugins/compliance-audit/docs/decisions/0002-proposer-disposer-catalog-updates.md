@@ -73,3 +73,17 @@ primitives and 3 mappings, golden run shows 0 verdict changes — merge or close
   building-block-level change, and emits the changed passage verbatim.
 - Verified: an unreachable source exits 2 and opens an issue rather than being
   treated as "no changes".
+
+### Correction (2026-07-31, see ADR 0004)
+
+The first "Verified" line above cannot be reproduced today and is not backed
+by any test in `.maintenance/tests/`. `.maintenance/scripts/replay.py` is a
+stub — confirmed by direct comparison, byte-identical MD5 — that copies
+`.maintenance/golden/expected-run.json` to its output regardless of the
+bundle passed in. `golden_diff.py` therefore compares that output against
+itself and cannot detect a verdict flip of any kind, simulated or real,
+irrespective of what the catalog under test says. Either this claim was
+verified by hand once, outside the code that exists today, or it was never
+mechanically true. Recorded rather than quietly dropped, for the same reason
+as the correction in ADR 0003. Fixing `replay.py` requires wiring the real
+auditor verdict phase into it, which is tracked but not yet done.

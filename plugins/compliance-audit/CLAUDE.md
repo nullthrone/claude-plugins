@@ -36,12 +36,15 @@ after three iterations the numbers disagree and neither artefact is usable.
 **A failed collector is never a pass.** Exit 2. This is the single most common
 way a compliance gate turns into decoration.
 
-**The catalog is never self-mutating.** `scripts/watch.py` detects, the
-`catalog-curator` subagent proposes, a human disposes. Reasons in
+**The catalog is never self-mutating.** `.maintenance/scripts/watch.py` detects,
+the `catalog-curator` subagent proposes, a human disposes. Reasons in
 `docs/decisions/0002`.
 
-**Golden run is untouchable.** `golden/` is the instrument that checks the
-curator. An agent that may edit it may launder its own mistakes.
+**Golden run is untouchable.** `.maintenance/golden/` is the instrument that
+checks the curator. An agent that may edit it may launder its own mistakes.
+As of `docs/decisions/0004`, `replay.py` is a stub that copies
+`expected-run.json` to its output verbatim — this gate cannot currently fail.
+Do not represent it as meaningful coverage until that changes.
 
 ## Layout
 
@@ -52,19 +55,23 @@ curator. An agent that may edit it may launder its own mistakes.
 | `catalog/sources.yaml` | what the watcher observes, and what it deliberately does not |
 | `schema/` | canonical run + change record |
 | `templates/` | report renderings, one per locale |
-| `scripts/` | render, watch, and the two CI gates |
-| `golden/` | frozen evidence bundle + expected verdicts |
-| `skills/`, `agents/`, `commands/` | the **shipped** plugin components |
+| `scripts/` | `render.py` only — the one script that runs at audit time |
+| `.maintenance/scripts/` | watch, the local gates, `promote_state.py` — maintenance-only, never shipped |
+| `.maintenance/golden/` | frozen evidence bundle + expected verdicts |
+| `skills/`, `agents/`, `commands/` | the **shipped** plugin components (auto-discovered — no `components` key in the manifest) |
 | `.maintenance/` | curator, watcher, gates, golden run, tests — **never shipped** |
 | `.claude-plugin/plugin.json` | manifest. Its `version` **is** the catalog version. |
 | `docs/decisions/` | smADRs |
 
 ## The plugin cut
 
-`components` in the manifest declares only `skills/`, `agents/`, `commands/`.
-Everything under `.maintenance/` is copied into the consumer's plugin cache along
-with the rest of the root, but is never *declared* — so Claude Code does not load
-it. CI rejects any `components` entry pointing there.
+The manifest declares no `components` key at all; `skills/`, `agents/`,
+`commands/` ship via Claude Code's default auto-discovery of those directory
+names. Everything under `.maintenance/` sits alongside them in this repo but
+outside every auto-discovered directory, so it is never loaded by a consumer.
+`.maintenance/scripts/check_not_shipped.py` verifies this locally (see
+Signposts) — both that no component path is explicitly declared into
+`.maintenance/`, and that nothing under what actually ships references it.
 
 The reason is not tidiness. A `catalog-curator` running from a consumer's cache
 would patch a catalog that the next `/plugin update` overwrites: the change is
@@ -90,5 +97,7 @@ Renumbering, wording, new primitives for existing controls: no ADR. Just a PR.
 ## Signposts
 
 - `/compliance-audit` — run an audit
-- `.claude/agents/catalog-curator.md` — the rules the curator may not break
-- `.maintenance/scripts/watch.py` — change detection against regulatory sources; run manually, no CI wiring in this repo
+- `.maintenance/agents/catalog-curator.md` — the rules the curator may not break
+- `.maintenance/scripts/watch.py` — change detection against regulatory sources
+- `.maintenance/scripts/check_not_shipped.py`, `check_catalog_bump.py`, `check_version_sync.py` — the local gates (no CI in this repo; see `docs/decisions/0004`)
+- `/catalog-watch` at the marketplace root (`.claude/commands/catalog-watch.md`) — the weekly runbook: runs watch.py, triages the record, proposes PRs/issues via the curator, runs the gates on its own commit before pushing. Scheduled locally (desktop task scheduler), not GitHub Actions — see `docs/decisions/0004`.

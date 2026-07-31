@@ -1,6 +1,6 @@
 # claude-plugins
 
-A [Claude Code](https://code.claude.com) plugin marketplace maintained by Thomas Sprock.
+A [Claude Code](https://code.claude.com) plugin marketplace.
 
 ## Installation
 
